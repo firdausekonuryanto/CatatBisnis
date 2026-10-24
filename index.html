@@ -1,0 +1,1592 @@
+<!doctype html>
+<html lang="id" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CatatBisnis AI - Expense & Business Insights Assistant</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              emerald: {
+                50: "#ecfdf5",
+                100: "#d1fae5",
+                500: "#10b981",
+                600: "#059669",
+                700: "#047857",
+                800: "#065f46",
+                900: "#064e3b",
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Font Awesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Inter Font -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      /* Custom scrollbar for clean dashboard UI */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(16, 185, 129, 0.3);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(16, 185, 129, 0.6);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-900 text-slate-100 min-h-full flex flex-col antialiased selection:bg-emerald-500 selection:text-white"
+  >
+    <!-- Toast Notification Overlay -->
+    <div
+      id="toast-container"
+      class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+    ></div>
+
+    <!-- Top Navigation Header -->
+    <header
+      class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/60 sticky top-0 z-40"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <!-- Logo & Brand -->
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-900/40"
+            >
+              <i class="fa-solid font-bold fa-brain text-xl"></i>
+            </div>
+            <div>
+              <span
+                class="font-bold text-lg tracking-tight text-white flex items-center gap-2"
+              >
+                CatatBisnis
+                <span
+                  class="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent"
+                  >AI</span
+                >
+                <span
+                  class="text-[10px] uppercase tracking-widest font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  >Pro</span
+                >
+              </span>
+              <p class="text-xs text-slate-400 hidden sm:block">
+                Asisten Keuangan & Analisis Bisnis Otomatis
+              </p>
+            </div>
+          </div>
+
+          <!-- Navigation Tabs & Actions -->
+          <div class="flex items-center gap-3">
+            <nav
+              class="flex bg-slate-900/80 p-1 rounded-xl border border-slate-700/50"
+            >
+              <button
+                onclick="switchTab('input')"
+                id="tab-input"
+                class="nav-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 text-white bg-emerald-600 shadow-sm flex items-center gap-2"
+              >
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span class="hidden md:inline">Catat AI</span>
+              </button>
+              <button
+                onclick="switchTab('analytics')"
+                id="tab-analytics"
+                class="nav-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 text-slate-400 hover:text-slate-200 flex items-center gap-2"
+              >
+                <i class="fa-solid fa-chart-line"></i>
+                <span class="hidden md:inline">Dasbor Analytics</span>
+              </button>
+              <button
+                onclick="switchTab('advisor')"
+                id="tab-advisor"
+                class="nav-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 text-slate-400 hover:text-slate-200 flex items-center gap-2"
+              >
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span class="hidden md:inline">AI Advisor</span>
+              </button>
+            </nav>
+
+            <button
+              onclick="resetToSampleData()"
+              class="p-2 text-slate-400 hover:text-rose-400 transition-colors rounded-lg hover:bg-slate-800"
+              title="Reset Ke Data Sampel"
+            >
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main
+      class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
+    >
+      <!-- Top Overview Metric Cards (Always Visible) -->
+      <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Total Income Card -->
+        <div
+          class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-sm hover:border-emerald-500/40 transition-all"
+        >
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-medium uppercase tracking-wider"
+              >Total Pemasukan</span
+            >
+            <div
+              class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center"
+            >
+              <i class="fa-solid fa-arrow-down-left"></i>
+            </div>
+          </div>
+          <div
+            class="text-xl sm:text-2xl font-bold text-emerald-400"
+            id="metric-income"
+          >
+            Rp 0
+          </div>
+          <div
+            class="text-[11px] text-slate-400 mt-1 flex items-center gap-1"
+            id="metric-income-count"
+          >
+            <span>0 transaksi</span>
+          </div>
+        </div>
+
+        <!-- Total Expenses Card -->
+        <div
+          class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-sm hover:border-rose-500/40 transition-all"
+        >
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-medium uppercase tracking-wider"
+              >Total Pengeluaran</span
+            >
+            <div
+              class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center"
+            >
+              <i class="fa-solid fa-arrow-up-right"></i>
+            </div>
+          </div>
+          <div
+            class="text-xl sm:text-2xl font-bold text-rose-400"
+            id="metric-expense"
+          >
+            Rp 0
+          </div>
+          <div
+            class="text-[11px] text-slate-400 mt-1 flex items-center gap-1"
+            id="metric-expense-count"
+          >
+            <span>0 transaksi</span>
+          </div>
+        </div>
+
+        <!-- Net Profit Card -->
+        <div
+          class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-sm hover:border-teal-500/40 transition-all"
+        >
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-medium uppercase tracking-wider"
+              >Laba Bersih</span
+            >
+            <div
+              class="w-8 h-8 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center"
+            >
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+          </div>
+          <div class="text-xl sm:text-2xl font-bold text-white" id="metric-net">
+            Rp 0
+          </div>
+          <div
+            class="text-[11px] text-slate-400 mt-1 flex items-center gap-1"
+            id="metric-margin"
+          >
+            <span>Margin: 0%</span>
+          </div>
+        </div>
+
+        <!-- Total Transaction Count -->
+        <div
+          class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 shadow-sm hover:border-indigo-500/40 transition-all"
+        >
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-medium uppercase tracking-wider"
+              >Total Transaksi</span
+            >
+            <div
+              class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center"
+            >
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+          </div>
+          <div
+            class="text-xl sm:text-2xl font-bold text-indigo-300"
+            id="metric-total-count"
+          >
+            0
+          </div>
+          <div
+            class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1"
+          >
+            <i class="fa-solid fa-circle-check text-[9px]"></i> Sistem Aktif
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 1: SMART INPUT & LOG TRANSAKSI -->
+      <div id="view-input" class="tab-view space-y-6">
+        <!-- AI Input Section -->
+        <div
+          class="bg-slate-800/80 border border-slate-700/70 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden"
+        >
+          <div
+            class="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"
+          ></div>
+
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4"
+          >
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles text-emerald-400"></i>
+                Input Catatan Transaksi Bahasa Alami
+              </h2>
+              <p class="text-xs text-slate-400">
+                Ketik catatan pengeluaran/pemasukan dalam bahasa sehari-hari. AI
+                akan memproses nominal, kategori, dan memberikan analisis bisnis
+                instan.
+              </p>
+            </div>
+            <span
+              class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-900/90 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 w-fit"
+            >
+              <span
+                class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"
+              ></span>
+              Gemini 3 Flash Parser Active
+            </span>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="mb-3">
+            <span class="text-xs font-semibold text-slate-400 mr-2"
+              >Contoh Cepat:</span
+            >
+            <div class="flex flex-wrap gap-2 mt-2">
+              <button
+                onclick="
+                  applyPreset(
+                    'Beli pupuk urea 2 sak total 350 ribu untuk kebun',
+                  )
+                "
+                class="text-xs bg-slate-900/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700/60 transition-all hover:border-emerald-500/50 flex items-center gap-1.5"
+              >
+                <i
+                  class="fa-solid fa-seedling text-emerald-400 text-[11px]"
+                ></i>
+                Pertanian (350rb)
+              </button>
+              <button
+                onclick="
+                  applyPreset('Jual paket katering 20 box total 800rb rupiah')
+                "
+                class="text-xs bg-slate-900/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700/60 transition-all hover:border-emerald-500/50 flex items-center gap-1.5"
+              >
+                <i class="fa-solid fa-utensils text-amber-400 text-[11px]"></i>
+                Katering Pemasukan (800rb)
+              </button>
+              <button
+                onclick="
+                  applyPreset(
+                    'Bayar listrik warung dan internet bulanan 250 ribu',
+                  )
+                "
+                class="text-xs bg-slate-900/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700/60 transition-all hover:border-emerald-500/50 flex items-center gap-1.5"
+              >
+                <i class="fa-solid fa-bolt text-cyan-400 text-[11px]"></i>
+                Operasional Warung (250rb)
+              </button>
+              <button
+                onclick="
+                  applyPreset('Beli kemasan box dan stiker label 150 ribu')
+                "
+                class="text-xs bg-slate-900/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700/60 transition-all hover:border-emerald-500/50 flex items-center gap-1.5"
+              >
+                <i class="fa-solid fa-box text-indigo-400 text-[11px]"></i>
+                Kemasan & Bahan (150rb)
+              </button>
+            </div>
+          </div>
+
+          <!-- Textarea Form -->
+          <form
+            id="ai-input-form"
+            onsubmit="handleAiProcess(event)"
+            class="space-y-4"
+          >
+            <div class="relative">
+              <textarea
+                id="raw-input"
+                rows="3"
+                required
+                placeholder="Contoh: Beli bahan baku ayam 10 kg dan bumbu dapur total 420 ribu untuk usaha katering..."
+                class="w-full bg-slate-900/90 border border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl p-3.5 text-slate-100 text-sm placeholder-slate-500 resize-none transition-all outline-none"
+              ></textarea>
+            </div>
+
+            <div
+              class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3"
+            >
+              <div class="flex items-center gap-2 text-xs text-slate-400">
+                <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                <span
+                  >Otomatis dikategorikan & tersimpan aman di browser
+                  Anda.</span
+                >
+              </div>
+              <button
+                type="submit"
+                id="btn-process"
+                class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-900/30 transition-all duration-200 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+              >
+                <i class="fa-solid fa-microchip"></i>
+                <span>Proses Catatan AI</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Processing Animation State -->
+          <div
+            id="loading-state"
+            class="hidden mt-4 p-4 rounded-xl bg-slate-900/90 border border-emerald-500/30 flex items-center gap-3 animate-pulse"
+          >
+            <div
+              class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"
+            ></div>
+            <span class="text-xs text-emerald-300 font-medium"
+              >AI sedang menganalisis catatan, mengekstrak data nominal, dan
+              menyusun saran bisnis...</span
+            >
+          </div>
+
+          <!-- AI Output Preview Card (Appears after extraction) -->
+          <div
+            id="ai-result-preview"
+            class="hidden mt-5 p-4 rounded-xl bg-slate-900/90 border border-emerald-500/40 space-y-3"
+          >
+            <div
+              class="flex items-center justify-between pb-2 border-b border-slate-800"
+            >
+              <span
+                class="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5"
+              >
+                <i class="fa-solid fa-circle-check"></i> Hasil Ekstraksi
+                Otomatis AI
+              </span>
+              <span
+                id="preview-type-badge"
+                class="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md"
+              ></span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <span class="text-slate-400 block">Kategori</span>
+                <span
+                  id="preview-category"
+                  class="font-semibold text-slate-200"
+                ></span>
+              </div>
+              <div>
+                <span class="text-slate-400 block">Nominal</span>
+                <span id="preview-amount" class="font-bold text-sm"></span>
+              </div>
+              <div>
+                <span class="text-slate-400 block">Item/Keterangan</span>
+                <span
+                  id="preview-items"
+                  class="font-medium text-slate-300"
+                ></span>
+              </div>
+              <div>
+                <span class="text-slate-400 block">Tanggal</span>
+                <span id="preview-date" class="font-medium text-slate-400"
+                  >Hari ini</span
+                >
+              </div>
+            </div>
+
+            <div
+              class="bg-emerald-950/40 border border-emerald-500/20 rounded-lg p-3 text-xs text-emerald-200 flex items-start gap-2.5"
+            >
+              <i
+                class="fa-solid fa-lightbulb text-emerald-400 mt-0.5 text-sm"
+              ></i>
+              <div>
+                <span class="font-semibold block text-emerald-300"
+                  >Saran Otomatis AI:</span
+                >
+                <p
+                  id="preview-insight"
+                  class="mt-0.5 text-slate-300 leading-relaxed"
+                ></p>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-1">
+              <button
+                onclick="cancelPreview()"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+              >
+                Batal
+              </button>
+              <button
+                onclick="confirmAndSaveTransaction()"
+                class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 shadow-md shadow-emerald-900/40"
+              >
+                <i class="fa-solid fa-floppy-disk"></i> Simpan Transaksi
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transaction Table Section -->
+        <div
+          class="bg-slate-800/80 border border-slate-700/70 rounded-2xl p-5 shadow-xl space-y-4"
+        >
+          <div
+            class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-700/60"
+          >
+            <div>
+              <h3
+                class="text-base font-bold text-white flex items-center gap-2"
+              >
+                <i class="fa-solid fa-list-check text-emerald-400"></i>
+                Daftar Transaksi Keuangan
+              </h3>
+              <p class="text-xs text-slate-400">
+                Riwayat pencatatan transaksi beserta catatan rekomendasi bisnis.
+              </p>
+            </div>
+
+            <!-- Search & Filters -->
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="relative flex-1 min-w-[160px]">
+                <i
+                  class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"
+                ></i>
+                <input
+                  type="text"
+                  id="table-search"
+                  oninput="renderTransactions()"
+                  placeholder="Cari transaksi..."
+                  class="w-full bg-slate-900/90 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <select
+                id="filter-type"
+                onchange="renderTransactions()"
+                class="bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+              >
+                <option value="all">Semua Tipe</option>
+                <option value="income">Pemasukan</option>
+                <option value="expense">Pengeluaran</option>
+              </select>
+
+              <button
+                onclick="exportToCSV()"
+                class="bg-slate-900 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl border border-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5"
+              >
+                <i class="fa-solid fa-file-csv text-emerald-400"></i> Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr
+                  class="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-900/60 rounded-lg"
+                >
+                  <th class="p-3 font-semibold rounded-l-lg">Tanggal</th>
+                  <th class="p-3 font-semibold">Catatan Asli</th>
+                  <th class="p-3 font-semibold">Kategori</th>
+                  <th class="p-3 font-semibold">Tipe</th>
+                  <th class="p-3 font-semibold">Nominal</th>
+                  <th class="p-3 font-semibold">AI Business Insight</th>
+                  <th class="p-3 font-semibold text-right rounded-r-lg">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
+              <tbody
+                id="transaction-rows"
+                class="divide-y divide-slate-700/50 text-xs"
+              >
+                <!-- Rows dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div
+            id="empty-state"
+            class="hidden py-8 text-center text-slate-500 space-y-2"
+          >
+            <i class="fa-solid fa-folder-open text-3xl text-slate-600"></i>
+            <p class="text-xs">
+              Belum ada transaksi tercatat. Masukkan catatan transaksi pertama
+              Anda di atas!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: DASBOR ANALYTICS -->
+      <div id="view-analytics" class="tab-view space-y-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Chart 1: Income vs Expense Breakdown -->
+          <div
+            class="bg-slate-800/80 border border-slate-700/70 rounded-2xl p-5 shadow-xl space-y-3"
+          >
+            <div
+              class="flex items-center justify-between border-b border-slate-700/60 pb-3"
+            >
+              <div>
+                <h3
+                  class="text-sm font-bold text-white flex items-center gap-2"
+                >
+                  <i class="fa-solid fa-chart-pie text-emerald-400"></i>
+                  Perbandingan Pemasukan vs Pengeluaran
+                </h3>
+                <p class="text-xs text-slate-400">
+                  Proporsi alokasi arus kas bisnis Anda.
+                </p>
+              </div>
+            </div>
+            <div class="relative h-64 flex items-center justify-center">
+              <canvas id="chartIncomeVsExpense"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Category Breakdown -->
+          <div
+            class="bg-slate-800/80 border border-slate-700/70 rounded-2xl p-5 shadow-xl space-y-3"
+          >
+            <div
+              class="flex items-center justify-between border-b border-slate-700/60 pb-3"
+            >
+              <div>
+                <h3
+                  class="text-sm font-bold text-white flex items-center gap-2"
+                >
+                  <i class="fa-solid fa-chart-bar text-teal-400"></i>
+                  Distribusi Pengeluaran Per Kategori
+                </h3>
+                <p class="text-xs text-slate-400">
+                  Identifikasi pos pengeluaran terbesar.
+                </p>
+              </div>
+            </div>
+            <div class="relative h-64">
+              <canvas id="chartCategoryBreakdown"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Health & Health Evaluation Card -->
+        <div
+          class="bg-slate-800/80 border border-slate-700/70 rounded-2xl p-5 shadow-xl space-y-4"
+        >
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-heart-pulse text-emerald-400"></i>
+            Evaluasi Kesehatan Keuangan Bisnis
+          </h3>
+
+          <div
+            class="grid grid-cols-1 md:grid-cols-3 gap-4"
+            id="health-indicators"
+          >
+            <!-- Dynamic Health Indicator Cards populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: AI FINANCIAL ADVISOR -->
+      <div id="view-advisor" class="tab-view space-y-6 hidden">
+        <div
+          class="bg-slate-800/80 border border-slate-700/70 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5"
+        >
+          <div
+            class="flex items-start justify-between border-b border-slate-700/60 pb-4"
+          >
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-user-doctor text-emerald-400"></i>
+                Asisten & Penasihat Keuangan Bisnis (AI Advisor)
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">
+                Tanyakan strategi penghematan, analisis arus kas, atau
+                rekomendasi pertumbuhan bisnis berdasarkan data riil Anda.
+              </p>
+            </div>
+            <div
+              class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-lg"
+            >
+              <i class="fa-solid fa-robot"></i>
+            </div>
+          </div>
+
+          <!-- Preset Advisor Prompts -->
+          <div class="space-y-2">
+            <span class="text-xs font-semibold text-slate-400"
+              >Pertanyaan Populer:</span
+            >
+            <div class="flex flex-wrap gap-2">
+              <button
+                onclick="
+                  askAdvisor(
+                    'Bagaimana evaluasi ringkas performa keuangan bisnis saya berdasarkan data transaksi saat ini?',
+                  )
+                "
+                class="text-xs bg-slate-900/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-emerald-500/40 text-left"
+              >
+                📊 Evaluasi Keuangan Keseluruhan
+              </button>
+              <button
+                onclick="
+                  askAdvisor(
+                    'Bagaimana cara paling efektif menekan biaya operasional yang tinggi?',
+                  )
+                "
+                class="text-xs bg-slate-900/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-emerald-500/40 text-left"
+              >
+                💡 Strategi Efisiensi Pengeluaran
+              </button>
+              <button
+                onclick="
+                  askAdvisor(
+                    'Apakah alokasi modal bahan baku saat ini sudah ideal atau terlalu berisiko?',
+                  )
+                "
+                class="text-xs bg-slate-900/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-emerald-500/40 text-left"
+              >
+                📦 Analisis Modal & Bahan Baku
+              </button>
+            </div>
+          </div>
+
+          <!-- Custom Query Bar -->
+          <form onsubmit="handleAdvisorQuery(event)" class="flex gap-2">
+            <input
+              type="text"
+              id="advisor-query-input"
+              placeholder="Tanyakan apa saja seputar keuangan usaha Anda..."
+              required
+              class="flex-1 bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+            <button
+              type="submit"
+              id="btn-ask-advisor"
+              class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition-all flex items-center gap-2"
+            >
+              <i class="fa-solid fa-paper-plane"></i>
+              <span class="hidden sm:inline">Tanya AI</span>
+            </button>
+          </form>
+
+          <!-- Advisor Chat / Output Response Container -->
+          <div
+            id="advisor-response-box"
+            class="min-h-[180px] bg-slate-900/90 border border-slate-700/80 rounded-xl p-4 text-xs text-slate-200 leading-relaxed relative"
+          >
+            <div
+              id="advisor-placeholder"
+              class="text-center py-10 text-slate-500 space-y-2"
+            >
+              <i class="fa-solid fa-comments text-3xl text-slate-600"></i>
+              <p>
+                Pilih salah satu pertanyaan di atas atau ketik pertanyaan khusus
+                Anda sendiri.
+              </p>
+            </div>
+
+            <div
+              id="advisor-loading"
+              class="hidden text-center py-10 space-y-3"
+            >
+              <div
+                class="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto"
+              ></div>
+              <p class="text-emerald-400 font-medium animate-pulse">
+                Menghubungkan ke Gemini 3 Flash & Menganalisis Arus Kas Anda...
+              </p>
+            </div>
+
+            <div id="advisor-content" class="hidden space-y-3">
+              <div
+                class="flex items-center gap-2 text-emerald-400 font-bold border-b border-slate-800 pb-2"
+              >
+                <i class="fa-solid fa-brain"></i> Tanggapan AI Business Advisor:
+              </div>
+              <div
+                id="advisor-text"
+                class="space-y-2 text-slate-300 leading-relaxed"
+              ></div>
+              <div
+                id="advisor-sources"
+                class="hidden pt-2 border-t border-slate-800/60 text-[11px] text-slate-400"
+              >
+                <span class="font-semibold block mb-1"
+                  >Sumber Referensi Riset:</span
+                >
+                <ul
+                  id="advisor-sources-list"
+                  class="list-disc pl-4 space-y-0.5 text-emerald-400"
+                ></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer
+      class="bg-slate-900 border-t border-slate-800 py-4 mt-8 text-center text-xs text-slate-500"
+    >
+      <p>
+        © 2026 CatatBisnis AI (ExpenseAI Pro) — Powered by Gemini 3 Flash &
+        Tailwind CSS
+      </p>
+    </footer>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+      // Default Sample Transactions Data (Local scenario in Indonesia)
+      const SAMPLE_TRANSACTIONS = [
+        {
+          id: "tx-1",
+          date: new Date(Date.now() - 86400000 * 3).toISOString().split("T")[0],
+          rawInput: "Beli pupuk urea 2 sak total 350 ribu untuk kebun",
+          type: "expense",
+          category: "Pertanian & Kebun",
+          amount: 350000,
+          items: "Pupuk Urea (2 sak)",
+          insight:
+            "Biaya pupuk tergolong investasi tepat untuk menjaga hasil panen. Pastikan waktu aplikasi sesuai cuaca.",
+        },
+        {
+          id: "tx-2",
+          date: new Date(Date.now() - 86400000 * 2).toISOString().split("T")[0],
+          rawInput: "Jual paket katering 20 box total 800rb rupiah",
+          type: "income",
+          category: "Penjualan Katering",
+          amount: 800000,
+          items: "Paket Katering (20 box)",
+          insight:
+            "Margin pesanan katering cukup tinggi. Pertahankan konsistensi rasa untuk order berulang.",
+        },
+        {
+          id: "tx-3",
+          date: new Date(Date.now() - 86400000 * 1).toISOString().split("T")[0],
+          rawInput: "Bayar listrik warung dan internet 250 ribu",
+          type: "expense",
+          category: "Operasional & Utilitas",
+          amount: 250000,
+          items: "Listrik & Internet Warung",
+          insight:
+            "Biaya utilitas masih berada dalam batas wajar (<10% dari omzet harian).",
+        },
+        {
+          id: "tx-4",
+          date: new Date().toISOString().split("T")[0],
+          rawInput: "Beli kemasan box dan stiker label 150 ribu",
+          type: "expense",
+          category: "Bahan Kemasan",
+          amount: 150000,
+          items: "Kemasan Box & Stiker Label",
+          insight:
+            "Investasi pada kemasan yang rapi berpotensi meningkatkan kepuasan dan repeat order pelanggan.",
+        },
+      ];
+
+      // State Management
+      let transactions = [];
+      let tempAiExtractedData = null;
+      let chartIncomeExpense = null;
+      let chartCategory = null;
+
+      // On Page Load
+      window.onload = function () {
+        loadTransactions();
+        renderTransactions();
+        initCharts();
+        updateMetrics();
+      };
+
+      // Load Transactions from LocalStorage or Fallback
+      function loadTransactions() {
+        const stored = localStorage.getItem("catat_bisnis_tx_v1");
+        if (stored) {
+          try {
+            transactions = JSON.parse(stored);
+          } catch (e) {
+            transactions = [...SAMPLE_TRANSACTIONS];
+          }
+        } else {
+          transactions = [...SAMPLE_TRANSACTIONS];
+          saveToLocalStorage();
+        }
+      }
+
+      function saveToLocalStorage() {
+        localStorage.setItem(
+          "catat_bisnis_tx_v1",
+          JSON.stringify(transactions),
+        );
+      }
+
+      function resetToSampleData() {
+        if (confirm("Atur ulang seluruh data ke transaksi sampel bawaan?")) {
+          transactions = [...SAMPLE_TRANSACTIONS];
+          saveToLocalStorage();
+          renderTransactions();
+          updateMetrics();
+          showToast("Data berhasil dikembalikan ke data sampel!", "success");
+        }
+      }
+
+      // Tab Switching Logic
+      function switchTab(tabName) {
+        document
+          .querySelectorAll(".tab-view")
+          .forEach((el) => el.classList.add("hidden"));
+        document.querySelectorAll(".nav-tab").forEach((el) => {
+          el.classList.remove("bg-emerald-600", "text-white", "shadow-sm");
+          el.classList.add("text-slate-400");
+        });
+
+        document.getElementById(`view-${tabName}`).classList.remove("hidden");
+        const activeNav = document.getElementById(`tab-${tabName}`);
+        activeNav.classList.add("bg-emerald-600", "text-white", "shadow-sm");
+        activeNav.classList.remove("text-slate-400");
+
+        if (tabName === "analytics") {
+          updateCharts();
+        }
+      }
+
+      // Apply Preset Prompt
+      function applyPreset(text) {
+        document.getElementById("raw-input").value = text;
+      }
+
+      // AI Processing Logic (Calling Gemini API / Intelligent Local Parser Fallback)
+      async function handleAiProcess(e) {
+        e.preventDefault();
+        const rawText = document.getElementById("raw-input").value.trim();
+        if (!rawText) return;
+
+        document.getElementById("loading-state").classList.remove("hidden");
+        document.getElementById("ai-result-preview").classList.add("hidden");
+        document.getElementById("btn-process").disabled = true;
+
+        try {
+          // Call Gemini API via fetch (system instruction + JSON output payload)
+          const extracted = await callGeminiExtractApi(rawText);
+          tempAiExtractedData = extracted;
+
+          // Render Preview Card
+          document.getElementById("preview-category").innerText =
+            extracted.category;
+          document.getElementById("preview-amount").innerText = formatRupiah(
+            extracted.amount,
+          );
+          document.getElementById("preview-items").innerText = extracted.items;
+          document.getElementById("preview-insight").innerText =
+            extracted.insight;
+
+          const badge = document.getElementById("preview-type-badge");
+          if (extracted.type === "income") {
+            badge.innerText = "Pemasukan";
+            badge.className =
+              "text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+            document.getElementById("preview-amount").className =
+              "font-bold text-sm text-emerald-400";
+          } else {
+            badge.innerText = "Pengeluaran";
+            badge.className =
+              "text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30";
+            document.getElementById("preview-amount").className =
+              "font-bold text-sm text-rose-400";
+          }
+
+          document
+            .getElementById("ai-result-preview")
+            .classList.remove("hidden");
+        } catch (err) {
+          console.warn("Direct LLM call fallback triggered:", err);
+          // Smart Intelligent Local Fallback if API key/network unavailable
+          const fallbackData = intelligentLocalParser(rawText);
+          tempAiExtractedData = fallbackData;
+
+          document.getElementById("preview-category").innerText =
+            fallbackData.category;
+          document.getElementById("preview-amount").innerText = formatRupiah(
+            fallbackData.amount,
+          );
+          document.getElementById("preview-items").innerText =
+            fallbackData.items;
+          document.getElementById("preview-insight").innerText =
+            fallbackData.insight;
+
+          const badge = document.getElementById("preview-type-badge");
+          if (fallbackData.type === "income") {
+            badge.innerText = "Pemasukan";
+            badge.className =
+              "text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+            document.getElementById("preview-amount").className =
+              "font-bold text-sm text-emerald-400";
+          } else {
+            badge.innerText = "Pengeluaran";
+            badge.className =
+              "text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30";
+            document.getElementById("preview-amount").className =
+              "font-bold text-sm text-rose-400";
+          }
+
+          document
+            .getElementById("ai-result-preview")
+            .classList.remove("hidden");
+        } finally {
+          document.getElementById("loading-state").classList.add("hidden");
+          document.getElementById("btn-process").disabled = false;
+        }
+      }
+
+      // Call Gemini 3 Flash API for Structured Processing
+      async function callGeminiExtractApi(promptText) {
+        const apiKey = ""; // Canvas provides runtime API key when empty
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const systemPrompt = `Anda adalah sistem parser transaksi keuangan usaha UMKM bahasa Indonesia. 
+Analisis kalimat input lalu kembalikan format JSON murni dengan field:
+- amount: (integer nominal dalam Rupiah)
+- type: ("income" atau "expense")
+- category: (string kategori singkat seperti 'Bahan Baku', 'Operasional', 'Penjualan Katering', 'Pertanian & Kebun', 'Peralatan')
+- items: (string rincian barang)
+- insight: (string 1-2 kalimat saran/analisis bisnis praktis dalam Bahasa Indonesia)`;
+
+        const payload = {
+          contents: [{ parts: [{ text: promptText }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          generationConfig: {
+            responseMimeType: "application/json",
+          },
+        };
+
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) throw new Error("API response error");
+        const data = await res.json();
+        const jsonText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        return JSON.parse(jsonText);
+      }
+
+      // Fallback Intelligent Parser logic
+      function intelligentLocalParser(text) {
+        const lower = text.toLowerCase();
+        let type = "expense";
+        if (
+          lower.includes("jual") ||
+          lower.includes("pemasukan") ||
+          lower.includes("dapat") ||
+          lower.includes("omset") ||
+          lower.includes("terima")
+        ) {
+          type = "income";
+        }
+
+        // Extract Numbers
+        let amount = 0;
+        const thousandMatch = lower.match(/(\d+[\.,]?\d*)\s*(ribu|rb|k)/);
+        const millionMatch = lower.match(/(\d+[\.,]?\d*)\s*(juta|jt)/);
+        const numberMatch = lower.match(/total\s*(\d+)|(\d+)\s*ribu/);
+
+        if (millionMatch) {
+          amount = parseFloat(millionMatch[1].replace(",", ".")) * 1000000;
+        } else if (thousandMatch) {
+          amount = parseFloat(thousandMatch[1].replace(",", ".")) * 1000;
+        } else {
+          const digits = lower.match(/\d+/g);
+          if (digits) {
+            const val = parseInt(digits.join(""));
+            amount = val < 1000 ? val * 1000 : val;
+          } else {
+            amount = 100000;
+          }
+        }
+
+        // Category matching
+        let category = "Lain-lain";
+        if (
+          lower.includes("pupuk") ||
+          lower.includes("kebun") ||
+          lower.includes("tani")
+        ) {
+          category = "Pertanian & Kebun";
+        } else if (
+          lower.includes("katering") ||
+          lower.includes("makan") ||
+          lower.includes("ayam") ||
+          lower.includes("bumbu")
+        ) {
+          category = type === "income" ? "Penjualan Katering" : "Bahan Makanan";
+        } else if (
+          lower.includes("listrik") ||
+          lower.includes("internet") ||
+          lower.includes("air") ||
+          lower.includes("sewa")
+        ) {
+          category = "Operasional & Utilitas";
+        } else if (
+          lower.includes("box") ||
+          lower.includes("kemasan") ||
+          lower.includes("stiker")
+        ) {
+          category = "Bahan Kemasan";
+        }
+
+        return {
+          amount: amount,
+          type: type,
+          category: category,
+          items: text.slice(0, 40) + "...",
+          insight:
+            type === "income"
+              ? "Pemasukan bagus untuk menjaga likuiditas usaha. Tabung sebagian untuk cadangan kas."
+              : "Pengeluaran penting untuk kelancaran operasional usaha. Pastikan ketersediaan stok terkelola rapi.",
+        };
+      }
+
+      // Confirm & Save
+      function confirmAndSaveTransaction() {
+        if (!tempAiExtractedData) return;
+
+        const newTx = {
+          id: "tx-" + Date.now(),
+          date: new Date().toISOString().split("T")[0],
+          rawInput: document.getElementById("raw-input").value.trim(),
+          type: tempAiExtractedData.type,
+          category: tempAiExtractedData.category,
+          amount: tempAiExtractedData.amount,
+          items: tempAiExtractedData.items,
+          insight: tempAiExtractedData.insight,
+        };
+
+        transactions.unshift(newTx);
+        saveToLocalStorage();
+        renderTransactions();
+        updateMetrics();
+
+        // Reset UI
+        document.getElementById("raw-input").value = "";
+        document.getElementById("ai-result-preview").classList.add("hidden");
+        tempAiExtractedData = null;
+
+        showToast("Transaksi baru berhasil ditambahkan!", "success");
+      }
+
+      function cancelPreview() {
+        document.getElementById("ai-result-preview").classList.add("hidden");
+        tempAiExtractedData = null;
+      }
+
+      // Render Table Rows
+      function renderTransactions() {
+        const tbody = document.getElementById("transaction-rows");
+        const search = document
+          .getElementById("table-search")
+          .value.toLowerCase();
+        const filterType = document.getElementById("filter-type").value;
+
+        const filtered = transactions.filter((t) => {
+          const matchesSearch =
+            t.rawInput.toLowerCase().includes(search) ||
+            t.category.toLowerCase().includes(search) ||
+            t.items.toLowerCase().includes(search);
+          const matchesType = filterType === "all" || t.type === filterType;
+          return matchesSearch && matchesType;
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = "";
+          document.getElementById("empty-state").classList.remove("hidden");
+          return;
+        } else {
+          document.getElementById("empty-state").classList.add("hidden");
+        }
+
+        tbody.innerHTML = filtered
+          .map((t) => {
+            const isIncome = t.type === "income";
+            return `
+                    <tr class="hover:bg-slate-800/50 transition-colors">
+                        <td class="p-3 text-slate-400 whitespace-nowrap">${t.date}</td>
+                        <td class="p-3 font-medium text-slate-200 max-w-xs truncate">${escapeHtml(t.rawInput)}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 text-[11px]">${escapeHtml(t.category)}</span></td>
+                        <td class="p-3">
+                            <span class="px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wider ${isIncome ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}">
+                                ${isIncome ? "Masuk" : "Keluar"}
+                            </span>
+                        </td>
+                        <td class="p-3 font-bold whitespace-nowrap ${isIncome ? "text-emerald-400" : "text-rose-400"}">
+                            ${isIncome ? "+" : "-"} ${formatRupiah(t.amount)}
+                        </td>
+                        <td class="p-3 text-slate-400 max-w-xs text-[11px] leading-snug">
+                            <i class="fa-solid fa-lightbulb text-amber-400/80 mr-1"></i>${escapeHtml(t.insight)}
+                        </td>
+                        <td class="p-3 text-right">
+                            <button onclick="deleteTransaction('${t.id}')" class="text-slate-500 hover:text-rose-400 transition-colors p-1" title="Hapus">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+          })
+          .join("");
+      }
+
+      function deleteTransaction(id) {
+        if (confirm("Hapus transaksi ini dari catatan?")) {
+          transactions = transactions.filter((t) => t.id !== id);
+          saveToLocalStorage();
+          renderTransactions();
+          updateMetrics();
+          showToast("Transaksi berhasil dihapus.", "info");
+        }
+      }
+
+      // Metrics Calculation
+      function updateMetrics() {
+        const income = transactions
+          .filter((t) => t.type === "income")
+          .reduce((acc, t) => acc + t.amount, 0);
+        const expense = transactions
+          .filter((t) => t.type === "expense")
+          .reduce((acc, t) => acc + t.amount, 0);
+        const net = income - expense;
+        const margin = income > 0 ? ((net / income) * 100).toFixed(1) : 0;
+
+        const incomeCount = transactions.filter(
+          (t) => t.type === "income",
+        ).length;
+        const expenseCount = transactions.filter(
+          (t) => t.type === "expense",
+        ).length;
+
+        document.getElementById("metric-income").innerText =
+          formatRupiah(income);
+        document.getElementById("metric-income-count").innerText =
+          `${incomeCount} transaksi masuk`;
+
+        document.getElementById("metric-expense").innerText =
+          formatRupiah(expense);
+        document.getElementById("metric-expense-count").innerText =
+          `${expenseCount} transaksi keluar`;
+
+        document.getElementById("metric-net").innerText = formatRupiah(net);
+        document.getElementById("metric-net").className =
+          `text-xl sm:text-2xl font-bold ${net >= 0 ? "text-emerald-400" : "text-rose-400"}`;
+        document.getElementById("metric-margin").innerText =
+          `Margin Laba: ${margin}%`;
+
+        document.getElementById("metric-total-count").innerText =
+          transactions.length;
+
+        updateHealthIndicators(income, expense, net, margin);
+      }
+
+      // Health Indicators Logic
+      function updateHealthIndicators(income, expense, net, margin) {
+        const container = document.getElementById("health-indicators");
+        let healthStatus = "Sehat";
+        let healthColor = "emerald";
+        let healthDesc =
+          "Pendapatan usaha melampaui total pengeluaran operasional.";
+
+        if (net < 0) {
+          healthStatus = "Defisit Arus Kas";
+          healthColor = "rose";
+          healthDesc =
+            "Pengeluaran melebihi pemasukan. Segera evaluasi pengeluaran non-prioritas.";
+        } else if (margin < 15) {
+          healthStatus = "Margin Tipis";
+          healthColor = "amber";
+          healthDesc =
+            "Laba bersih berada di bawah 15%. Pertimbangkan efisiensi biaya bahan.";
+        }
+
+        container.innerHTML = `
+                <div class="bg-slate-900/90 border border-slate-700 p-4 rounded-xl space-y-1">
+                    <span class="text-xs text-slate-400 block">Status Kesehatan Kas</span>
+                    <span class="text-base font-bold text-${healthColor}-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle text-[10px]"></i> ${healthStatus}
+                    </span>
+                    <p class="text-[11px] text-slate-400">${healthDesc}</p>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-700 p-4 rounded-xl space-y-1">
+                    <span class="text-xs text-slate-400 block">Rasio Beban Operasional</span>
+                    <span class="text-base font-bold text-slate-100">
+                        ${income > 0 ? ((expense / income) * 100).toFixed(1) : 100}%
+                    </span>
+                    <p class="text-[11px] text-slate-400">Persentase pendapatan yang dipakai membayar biaya.</p>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-700 p-4 rounded-xl space-y-1">
+                    <span class="text-xs text-slate-400 block">Rekomendasi Utama AI</span>
+                    <span class="text-xs font-semibold text-emerald-300 block">
+                        ${net >= 0 ? "Pertahankan pertumbuhan & alokasikan cadangan modal." : "Tinjau ulang biaya pembelian pasokan terbanyak."}
+                    </span>
+                </div>
+            `;
+      }
+
+      // Charts Rendering
+      function initCharts() {
+        const ctx1 = document
+          .getElementById("chartIncomeVsExpense")
+          .getContext("2d");
+        chartIncomeExpense = new Chart(ctx1, {
+          type: "doughnut",
+          data: {
+            labels: ["Pemasukan", "Pengeluaran"],
+            datasets: [
+              {
+                data: [0, 0],
+                backgroundColor: ["#10b981", "#f43f5e"],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { color: "#94a3b8", font: { size: 12 } },
+              },
+            },
+          },
+        });
+
+        const ctx2 = document
+          .getElementById("chartCategoryBreakdown")
+          .getContext("2d");
+        chartCategory = new Chart(ctx2, {
+          type: "bar",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "Pengeluaran (Rp)",
+                data: [],
+                backgroundColor: "#14b8a6",
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                ticks: { color: "#94a3b8", font: { size: 10 } },
+                grid: { display: false },
+              },
+              y: {
+                ticks: { color: "#94a3b8", font: { size: 10 } },
+                grid: { color: "rgba(255,255,255,0.05)" },
+              },
+            },
+            plugins: {
+              legend: { display: false },
+            },
+          },
+        });
+      }
+
+      function updateCharts() {
+        if (!chartIncomeExpense || !chartCategory) return;
+
+        const income = transactions
+          .filter((t) => t.type === "income")
+          .reduce((acc, t) => acc + t.amount, 0);
+        const expense = transactions
+          .filter((t) => t.type === "expense")
+          .reduce((acc, t) => acc + t.amount, 0);
+
+        chartIncomeExpense.data.datasets[0].data = [income, expense];
+        chartIncomeExpense.update();
+
+        // Group expenses by category
+        const categoryMap = {};
+        transactions
+          .filter((t) => t.type === "expense")
+          .forEach((t) => {
+            categoryMap[t.category] = (categoryMap[t.category] || 0) + t.amount;
+          });
+
+        chartCategory.data.labels = Object.keys(categoryMap);
+        chartCategory.data.datasets[0].data = Object.values(categoryMap);
+        chartCategory.update();
+      }
+
+      // AI Advisor Handler
+      function askAdvisor(queryText) {
+        document.getElementById("advisor-query-input").value = queryText;
+        executeAdvisorQuery(queryText);
+      }
+
+      function handleAdvisorQuery(e) {
+        e.preventDefault();
+        const query = document
+          .getElementById("advisor-query-input")
+          .value.trim();
+        if (query) executeAdvisorQuery(query);
+      }
+
+      async function executeAdvisorQuery(queryText) {
+        document.getElementById("advisor-placeholder").classList.add("hidden");
+        document.getElementById("advisor-content").classList.add("hidden");
+        document.getElementById("advisor-loading").classList.remove("hidden");
+
+        const totalInc = transactions
+          .filter((t) => t.type === "income")
+          .reduce((a, b) => a + b.amount, 0);
+        const totalExp = transactions
+          .filter((t) => t.type === "expense")
+          .reduce((a, b) => a + b.amount, 0);
+
+        const contextPrompt = `Anda adalah penasihat keuangan senior khusus UMKM di Indonesia. 
+Data Keuangan Pengguna:
+- Total Pemasukan: ${formatRupiah(totalInc)}
+- Total Pengeluaran: ${formatRupiah(totalExp)}
+- Sisa Laba: ${formatRupiah(totalInc - totalExp)}
+- Jumlah Transaksi Tercatat: ${transactions.length}
+
+Pertanyaan Pengguna: "${queryText}"
+
+Berikan jawaban profesional, realistis, aplikatif, dan terstruktur dalam Bahasa Indonesia (gunakan bullet points jika perlu).`;
+
+        try {
+          const response = await callGeminiAdvisor(queryText, contextPrompt);
+          renderAdvisorText(response.text);
+
+          if (response.sources && response.sources.length > 0) {
+            const sourcesList = document.getElementById("advisor-sources-list");
+            sourcesList.innerHTML = response.sources
+              .map(
+                (s) =>
+                  `<li><a href="${s.uri}" target="_blank" class="hover:underline">${s.title}</a></li>`,
+              )
+              .join("");
+            document
+              .getElementById("advisor-sources")
+              .classList.remove("hidden");
+          } else {
+            document.getElementById("advisor-sources").classList.add("hidden");
+          }
+        } catch (err) {
+          // Fallback Advisor Answer
+          const fallbackResponse = generateLocalAdvisorResponse(
+            queryText,
+            totalInc,
+            totalExp,
+          );
+          renderAdvisorText(fallbackResponse);
+        } finally {
+          document.getElementById("advisor-loading").classList.add("hidden");
+          document.getElementById("advisor-content").classList.remove("hidden");
+        }
+      }
+
+      async function callGeminiAdvisor(query, fullPrompt) {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const payload = {
+          contents: [{ parts: [{ text: fullPrompt }] }],
+          tools: [{ google_search: {} }],
+        };
+
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) throw new Error("Advisor API failed");
+        const result = await res.json();
+        const candidate = result.candidates?.[0];
+        const text =
+          candidate?.content?.parts?.[0]?.text ||
+          "Maaf, sistem tidak dapat memproses jawaban.";
+
+        let sources = [];
+        const groundingMetadata = candidate?.groundingMetadata;
+        if (groundingMetadata && groundingMetadata.groundingAttributions) {
+          sources = groundingMetadata.groundingAttributions
+            .map((attr) => ({ uri: attr.web?.uri, title: attr.web?.title }))
+            .filter((s) => s.uri && s.title);
+        }
+
+        return { text, sources };
+      }
+
+      function generateLocalAdvisorResponse(query, inc, exp) {
+        const net = inc - exp;
+        return `Berdasarkan data catatan transaksi Anda:
+• **Arus Kas:** Pemasukan ${formatRupiah(inc)} dengan Pengeluaran ${formatRupiah(exp)} (${net >= 0 ? "Surplus " + formatRupiah(net) : "Defisit " + formatRupiah(net)}).
+• **Langkah Rekomendasi:**
+  1. Kelompokkan pengeluaran wajib (seperti bahan mentah) vs opsional.
+  2. Pertahankan margin keuntungan minimal 20-25% di setiap penjualan barang/jasa.
+  3. Sisihkan minimal 10% dari pemasukan ke dalam dana darurat operasional.`;
+      }
+
+      function renderAdvisorText(text) {
+        // Convert markdown simple formatting (* or **) to clean HTML
+        const formatted = text
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+          .replace(/\*(.*?)\*/g, "<em>$1</em>")
+          .replace(/\n\n/g, "<br><br>")
+          .replace(/\n/g, "<br>");
+
+        document.getElementById("advisor-text").innerHTML = formatted;
+      }
+
+      // Export to CSV
+      function exportToCSV() {
+        if (transactions.length === 0) {
+          showToast("Tidak ada data untuk diexport.", "warning");
+          return;
+        }
+
+        let csvContent =
+          "data:text/csv;charset=utf-8,ID,Tanggal,Input Asli,Tipe,Kategori,Nominal,Detail,Insight\n";
+        transactions.forEach((t) => {
+          const row = [
+            t.id,
+            t.date,
+            `"${t.rawInput.replace(/"/g, '""')}"`,
+            t.type,
+            `"${t.category}"`,
+            t.amount,
+            `"${t.items.replace(/"/g, '""')}"`,
+            `"${t.insight.replace(/"/g, '""')}"`,
+          ].join(",");
+          csvContent += row + "\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute(
+          "download",
+          `Laporan_CatatBisnis_${new Date().toISOString().split("T")[0]}.csv`,
+        );
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showToast("Laporan CSV berhasil diunduh!", "success");
+      }
+
+      // Utility Helpers
+      function formatRupiah(number) {
+        return new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          maximumFractionDigits: 0,
+        }).format(number);
+      }
+
+      function escapeHtml(text) {
+        return String(text)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+
+        let icon = "fa-circle-info text-cyan-400";
+        let border = "border-slate-700";
+
+        if (type === "success") {
+          icon = "fa-circle-check text-emerald-400";
+          border = "border-emerald-500/40";
+        } else if (type === "warning") {
+          icon = "fa-triangle-exclamation text-amber-400";
+          border = "border-amber-500/40";
+        }
+
+        toast.className = `pointer-events-auto bg-slate-800 text-slate-100 text-xs px-4 py-3 rounded-xl border ${border} shadow-xl flex items-center gap-2.5 transition-all duration-300 transform translate-y-2 opacity-0`;
+        toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i><span>${message}</span>`;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.classList.remove("translate-y-2", "opacity-0");
+        }, 10);
+
+        setTimeout(() => {
+          toast.classList.add("opacity-0", "translate-y-2");
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+    </script>
+  </body>
+</html>
